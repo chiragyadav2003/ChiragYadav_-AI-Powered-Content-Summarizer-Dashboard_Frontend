@@ -1,12 +1,11 @@
-// src/pages/Dashboard.jsx
 import { useState } from 'react';
 import TextInputArea from '../components/TextInputArea';
 import UrlInputField from '../components/UrlInputField';
-import ResultsDisplay from '../components/ResultDisplay'
+import ResultsDisplay from '../components/ResultDisplay';
 import HistorySection from '../components/HistorySection';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { fetchContentFromUrl } from '../utils/WebScraping';
-import { getAISummary } from '../utils/aiAummarization'
+import { getAISummary } from '../utils/aiSummarization';
 
 const Dashboard = () => {
   const [content, setContent] = useState('');
@@ -14,7 +13,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [history, setHistory] = useState([]);
-  const [summaryLength, setSummaryLength] = useState('short');
+  const [outputSentences, setOutputSentences] = useState(3);
   const [url, setUrl] = useState('');
 
   const handleUrlSubmit = async (url) => {
@@ -23,7 +22,7 @@ const Dashboard = () => {
     try {
       const scrapedContent = await fetchContentFromUrl(url);
       setContent(scrapedContent);
-      setUrl(url);
+      setUrl(url => url);
     } catch (error) {
       setError('Failed to fetch content from the provided URL');
     } finally {
@@ -35,10 +34,9 @@ const Dashboard = () => {
     setLoading(true);
     setError('');
     try {
-      const summary = await getAISummary(url, summaryLength);
-      setSummary(summary);
-      console.log("summary", summary)
-      setHistory([...history, { content, summary }]);
+      const summaryData = await getAISummary(content, outputSentences);
+      setSummary(summaryData); // Adjust based on the actual response structure
+      setHistory([...history, { content, summary: summaryData }]); // Adjust based on the actual response structure
     } catch (error) {
       setError('Failed to summarize the content');
     } finally {
@@ -46,19 +44,19 @@ const Dashboard = () => {
     }
   };
 
-  console.log("summary", summary)
-
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">AI-Powered Content Summarizer Dashboard</h1>
       <UrlInputField onSubmit={handleUrlSubmit} />
       <TextInputArea value={content} onChange={setContent} />
       <div className="mt-4">
-        <label className="mr-2">Summary Length:</label>
-        <select value={summaryLength} onChange={(e) => setSummaryLength(e.target.value)} className="border p-1 rounded">
-          <option value="short">Short</option>
-          <option value="medium">Medium</option>
-          <option value="long">Long</option>
+        <label className="mr-2">Number of Output Sentences:</label>
+        <select value={outputSentences} onChange={(e) => setOutputSentences(e.target.value)} className="border p-1 rounded">
+          <option value={1}>1</option>
+          <option value={2}>2</option>
+          <option value={3}>3</option>
+          <option value={4}>4</option>
+          <option value={5}>5</option>
         </select>
       </div>
       <button
@@ -70,7 +68,7 @@ const Dashboard = () => {
       </button>
       {loading && <LoadingSpinner />}
       {error && <p className="text-red-500 mt-4">{error}</p>}
-      <ResultsDisplay summary={summary} />
+      <ResultsDisplay content={content} summary={summary} />
       <HistorySection history={history} />
     </div>
   );
